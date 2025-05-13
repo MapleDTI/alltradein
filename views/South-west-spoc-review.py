@@ -41,7 +41,7 @@ if 'data' in st.session_state:
         st.metric("Total Years in Data", len(df['Year'].unique()))
     
     with col2:
-        maple_bid_total = filtered_df['Maple Device Value'].count()
+        maple_bid_total = filtered_df['Maple Bid'].count()
         st.metric("Count of Maple Bid till 9th May,2025", f"{maple_bid_total:,.2f}")
     
     with col3:
