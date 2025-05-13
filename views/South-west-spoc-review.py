@@ -1,3 +1,4 @@
+```python
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -69,7 +70,7 @@ if 'data' in st.session_state:
     state_options = df[df['State Region'] == selected_region]['Store State'].dropna().unique()
     selected_state = st.selectbox("Select State", state_options)
 
-    spoc_options = df[(df['State Region'] == selected_region) & (df['Store State'] == selected_state)]['Spoc Name'].dropna().unique()
+    spSuspension options = df[(df['State Region'] == selected_region) & (df['Store State'] == selected_state)]['Spoc Name'].dropna().unique()
     selected_spoc = st.selectbox("Select SPOC", spoc_options)
 
     spoc_filtered_df = df[(df['State Region'] == selected_region) &
@@ -104,7 +105,14 @@ if 'data' in st.session_state:
     st.write(f"Total Trade-Ins for {selected_spoc}: {spoc_filtered_df.shape[0]}")
 
     st.subheader("(3) Price Range Comparison")
-    if all(col in filtered_df.columns for col in ['Maple Bid', 'Cashify Bid', 'Product Category', 'Product Type Old', 'New Product Name']):
+    required_bid_columns = ['Maple Bid', 'Cashify Bid', 'Product Category', 'Product Type Old', 'New Product Name']
+    missing_columns = [col for col in required_bid_columns if col not in filtered_df.columns]
+    
+    if missing_columns:
+        st.error(f"Missing the following required columns for bid comparison: {', '.join(missing_columns)}")
+        st.warning("Please check the uploaded Excel file and ensure the column names match exactly: " + ", ".join(required_bid_columns))
+        st.write("Available columns in your file: " + ", ".join(filtered_df.columns))
+    else:
         filtered_df['Price Difference'] = filtered_df['Maple Bid'] - filtered_df['Cashify Bid']
 
         # Dropdowns for filtering
@@ -172,8 +180,6 @@ if 'data' in st.session_state:
                         )
 
         st.plotly_chart(fig)
-    else:
-        st.warning("Missing one or more columns required for bid comparison.")
 
     st.subheader("(5) Year and Month Wise Growth")
     year_month_growth = filtered_df.groupby(['Year', 'Month', 'State Region']).size().reset_index(name='Trade-In Count')
@@ -198,3 +204,4 @@ if 'data' in st.session_state:
     st.write("### Bottom 10 Performing Stores")
     st.dataframe(bottom_10)
     download_excel(bottom_10, "bottom_10_stores.xlsx")
+```
