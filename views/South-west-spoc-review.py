@@ -41,12 +41,12 @@ if 'data' in st.session_state:
         st.metric("Total Years in Data", len(df['Year'].unique()))
     
     with col2:
-        vendor_bid_total = filtered_df['Vendor Device Value with Coupon'].sum()
-        st.metric("Sum of Maple Bid with Coupon", f"{vendor_bid_total:,.2f}")
+        maple_bid_total = filtered_df['Maple Device Value'].count()
+        st.metric("Count of Maple Bid till 9th May,2025", f"{maple_bid_total:,.2f}")
     
     with col3:
-        cashify_bid_total = filtered_df['Cashify Bid with coupon'].sum()
-        st.metric("Sum of Cashify Bid with Coupon", f"{cashify_bid_total:,.2f}")
+        cashify_bid_total = filtered_df['Cashify Bid'].count()
+        st.metric("Count of Cashify Bid till 9th May,2025", f"{cashify_bid_total:,.2f}")
     
     # Store Performance Improvement
     st.subheader("(1) Store Performance Improvement")
@@ -83,15 +83,15 @@ if 'data' in st.session_state:
     
     # Price Comparison
     st.subheader("(3) Price Range Comparison")
-    filtered_df['Price Difference'] = filtered_df['Vendor Device Value with Coupon'] - filtered_df['Cashify Bid with coupon']
-    fig_price_comparison = px.bar(filtered_df, x='New Product Name', y='Price Difference', title="Price Difference between Vendor and Cashify Bids")
+    filtered_df['Price Difference'] = filtered_df['Maple Bid'] - filtered_df['Cashify Bid']
+    fig_price_comparison = px.bar(filtered_df, x='New Product Name', y='Price Difference', title="Price Difference between Maple and Cashify Bids")
     st.plotly_chart(fig_price_comparison)
     
     # Difference Analysis
     st.subheader("(4) Difference Analysis")
     filtered_df = filtered_df[filtered_df['Cashify Bid with coupon'] > 0]
     filtered_df['% Difference'] = ((filtered_df['Price Difference'] / filtered_df['Cashify Bid with coupon']) * 100).round(2)
-    fig_difference = px.histogram(filtered_df, x='% Difference', title="% Difference Analysis (Vendor vs Cashify)")
+    fig_difference = px.histogram(filtered_df, x='% Difference', title="% Difference Analysis (Maple vs Cashify)")
     st.plotly_chart(fig_difference)
     
     # Year and Month Wise Growth
