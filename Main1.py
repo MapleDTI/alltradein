@@ -54,7 +54,7 @@ else:
     st.success(f"✅ You are logged in as {st.session_state.username}")
     
     # -- Page Setup --
-    CPL_Trade_In_Comparison = st.Page(
+    CRL_Trade_In_Comparison = st.Page(
         page="views/CPLcomparisonboard.py",
         title="CPL Trade-in Comparison",
     )
