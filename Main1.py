@@ -1,6 +1,6 @@
 import streamlit as st
 import hashlib
-import plotly
+import plotly.express as px
 import fpdf
 
 # ✅ Set Streamlit page config ONLY ONCE here
