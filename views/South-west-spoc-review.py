@@ -104,7 +104,7 @@ if 'data' in st.session_state:
     st.write(f"Total Trade-Ins for {selected_spoc}: {spoc_filtered_df.shape[0]}")
 
     st.subheader("(3) Price Range Comparison")
-    required_bid_columns = ['Maple Bid', 'Cashify Bid', 'Product Category', 'Product Type Old', 'New Product Name']
+    required_bid_columns = ['Maple Bid', 'Cashify Bid', 'Product Category', 'Product Type', 'Old Product Name']
     missing_columns = [col for col in required_bid_columns if col not in filtered_df.columns]
     
     if missing_columns:
@@ -118,10 +118,10 @@ if 'data' in st.session_state:
         selected_category = st.selectbox("Select Product Category", filtered_df['Product Category'].dropna().unique())
         filtered_df = filtered_df[filtered_df['Product Category'] == selected_category]
 
-        selected_type = st.selectbox("Select Product Type Old", filtered_df['Product Type'].dropna().unique())
-        filtered_df = filtered_df[filtered_df['Product Type Old'] == selected_type]
+        selected_type = st.selectbox("Select Product Type", filtered_df['Product Type'].dropna().unique())
+        filtered_df = filtered_df[filtered_df['Product Type'] == selected_type]
 
-        selected_product = st.selectbox("Select Product Name", filtered_df['New Product Name'].dropna().unique())
+        selected_product = st.selectbox("Select Product Name", filtered_df['Old Product Name'].dropna().unique())
         filtered_df = filtered_df[filtered_df['New Product Name'] == selected_product]
 
         # Prepare YearMonth
