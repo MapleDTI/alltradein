@@ -118,7 +118,7 @@ if 'data' in st.session_state:
         selected_category = st.selectbox("Select Product Category", filtered_df['Product Category'].dropna().unique())
         filtered_df = filtered_df[filtered_df['Product Category'] == selected_category]
 
-        selected_type = st.selectbox("Select Product Type Old", filtered_df['Product Type Old'].dropna().unique())
+        selected_type = st.selectbox("Select Product Type Old", filtered_df['Product Type'].dropna().unique())
         filtered_df = filtered_df[filtered_df['Product Type Old'] == selected_type]
 
         selected_product = st.selectbox("Select Product Name", filtered_df['New Product Name'].dropna().unique())
