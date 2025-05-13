@@ -14,9 +14,14 @@ if "logged_in" not in st.session_state or not st.session_state.logged_in:
     st.error("🔒 You must be logged in to view this page.")
     st.stop()
 
-# --- Load Data ---
-df = pd.read_excel("/Users/maple/Desktop/Transfer/Final Dashboard for the trade-in/views/March Summary of Trade-in (1).xlsx")
-df.columns = df.columns.str.strip()
+uploaded_file = st.file_uploader("📤 Upload March Trade-in Excel File", type=["xlsx"])
+
+if uploaded_file is not None:
+    df = pd.read_excel(uploaded_file)
+    df.columns = df.columns.str.strip()
+else:
+    st.warning("⚠️ Please upload a valid Excel file to proceed.")
+    st.stop()
 
 exclude_spocs = ["No-spoc", "Joining on 14th April, 2025", "Joining on 24th April,2025", "Joined on 9th April,2025"]
 df = df[~df["Spoc Name"].isin(exclude_spocs)]
