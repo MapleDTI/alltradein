@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from io import BytesIO
+import plotly.graph_objects as go
 
 st.title("Maple Digital Technology International - Trade-In Dashboard for SPOC review")
 
@@ -79,6 +80,16 @@ if 'data' in st.session_state:
     spoc_store_performance = spoc_filtered_df.groupby(['YearMonth', 'Store Name']).size().reset_index(name='Trade-In Count')
     fig_spoc_performance = px.bar(spoc_store_performance, x='YearMonth', y='Trade-In Count', color='Store Name',
                                   title=f"Store Performance for {selected_spoc}")
+    # Add text annotations for trade-in count on top of bars
+    for i, row in spoc_store_performance.iterrows():
+        fig_spoc_performance.add_annotation(
+            x=row['YearMonth'],
+            y=row['Trade-In Count'],
+            text=str(row['Trade-In Count']),
+            showarrow=False,
+            yshift=10,
+            font=dict(size=10)
+        )
     st.plotly_chart(fig_spoc_performance)
 
     st.subheader("(2) Trade-In Analysis by Region, State, Store, and SPOC")
@@ -93,17 +104,76 @@ if 'data' in st.session_state:
     st.write(f"Total Trade-Ins for {selected_spoc}: {spoc_filtered_df.shape[0]}")
 
     st.subheader("(3) Price Range Comparison")
-    if 'Maple Bid' in filtered_df.columns and 'Cashify Bid' in filtered_df.columns:
+    if all(col in filtered_df.columns for col in ['Maple Bid', 'Cashify Bid', 'Product Category', 'Product Type Old', 'New Product Name']):
         filtered_df['Price Difference'] = filtered_df['Maple Bid'] - filtered_df['Cashify Bid']
-        fig_price_comparison = px.bar(filtered_df, x='New Product Name', y='Price Difference', title="Price Difference between Maple and Cashify Bids")
-        st.plotly_chart(fig_price_comparison)
 
-    st.subheader("(4) Difference Analysis")
-    if all(col in filtered_df.columns for col in ['Cashify Bid with coupon', 'Price Difference']):
-        filtered_df = filtered_df[filtered_df['Cashify Bid with coupon'] > 0]
-        filtered_df['% Difference'] = ((filtered_df['Price Difference'] / filtered_df['Cashify Bid with coupon']) * 100).round(2)
-        fig_difference = px.histogram(filtered_df, x='% Difference', title="% Difference Analysis (Maple vs Cashify)")
-        st.plotly_chart(fig_difference)
+        # Dropdowns for filtering
+        selected_category = st.selectbox("Select Product Category", filtered_df['Product Category'].dropna().unique())
+        filtered_df = filtered_df[filtered_df['Product Category'] == selected_category]
+
+        selected_type = st.selectbox("Select Product Type Old", filtered_df['Product Type Old'].dropna().unique())
+        filtered_df = filtered_df[filtered_df['Product Type Old'] == selected_type]
+
+        selected_product = st.selectbox("Select Product Name", filtered_df['New Product Name'].dropna().unique())
+        filtered_df = filtered_df[filtered_df['New Product Name'] == selected_product]
+
+        # Prepare YearMonth
+        filtered_df['YearMonth'] = filtered_df['Created Date'].dt.to_period('M').astype(str)
+
+        # Aggregated Bids by Month
+        monthly_bids = filtered_df.groupby('YearMonth').agg({
+            'Maple Bid': ['mean', 'count'],
+            'Cashify Bid': ['mean', 'count'],
+            'Price Difference': ['mean', 'count']
+        }).reset_index()
+        monthly_bids.columns = ['YearMonth', 'Maple Bid Mean', 'Maple Bid Count', 'Cashify Bid Mean', 'Cashify Bid Count', 'Price Difference Mean', 'Price Difference Count']
+
+        # Melt for multi-bar plotting
+        plot_df = monthly_bids.melt(id_vars='YearMonth', 
+                                    value_vars=['Maple Bid Mean', 'Cashify Bid Mean', 'Price Difference Mean'],
+                                    var_name='Bid Type', value_name='Amount')
+
+        # Map Bid Type for legend
+        plot_df['Bid Type'] = plot_df['Bid Type'].replace({
+            'Maple Bid Mean': 'Maple Bid',
+            'Cashify Bid Mean': 'Cashify Bid',
+            'Price Difference Mean': 'Price Difference'
+        })
+
+        color_map = {
+            'Maple Bid': '#4C9AFF',  # Sea Blue
+            'Cashify Bid': '#003F88',  # Navy Blue
+            'Price Difference': '#00A86B'  # Jade Blue
+        }
+
+        fig = px.bar(plot_df, x='YearMonth', y='Amount', color='Bid Type',
+                     title=f"Monthly Bid Comparison for {selected_product}: Maple vs Cashify",
+                     color_discrete_map=color_map, barmode='group')
+
+        # Add annotations for count and average bid
+        for _, row in monthly_bids.iterrows():
+            year_month = row['YearMonth']
+            for bid_type, color in [('Maple Bid', '#4C9AFF'), ('Cashify Bid', '#003F88'), ('Price Difference', '#00A86B')]:
+                bid_key = bid_type.replace(' ', ' ') + ' Mean'
+                count_key = bid_type.replace(' ', ' ') + ' Count'
+                if bid_key in monthly_bids.columns:
+                    amount = row[bid_key]
+                    count = row[count_key]
+                    if pd.notnull(amount):
+                        fig.add_annotation(
+                            x=year_month,
+                            y=amount,
+                            text=f"Count: {int(count)}<br>Avg: {amount:.2f}",
+                            showarrow=False,
+                            yshift=10,
+                            font=dict(size=10, color=color),
+                            xanchor='center',
+                            align='center'
+                        )
+
+        st.plotly_chart(fig)
+    else:
+        st.warning("Missing one or more columns required for bid comparison.")
 
     st.subheader("(5) Year and Month Wise Growth")
     year_month_growth = filtered_df.groupby(['Year', 'Month', 'State Region']).size().reset_index(name='Trade-In Count')
@@ -128,4 +198,3 @@ if 'data' in st.session_state:
     st.write("### Bottom 10 Performing Stores")
     st.dataframe(bottom_10)
     download_excel(bottom_10, "bottom_10_stores.xlsx")
-
