@@ -203,4 +203,3 @@ if 'data' in st.session_state:
     st.write("### Bottom 10 Performing Stores")
     st.dataframe(bottom_10)
     download_excel(bottom_10, "bottom_10_stores.xlsx")
-```
