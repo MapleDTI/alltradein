@@ -1,5 +1,7 @@
 import streamlit as st
 import hashlib
+import plotly
+import fpdf
 
 # ✅ Set Streamlit page config ONLY ONCE here
 st.set_page_config(page_title="Trade-in KPI Dashboard", layout="wide")
