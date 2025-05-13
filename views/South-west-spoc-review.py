@@ -69,7 +69,7 @@ if 'data' in st.session_state:
     state_options = df[df['State Region'] == selected_region]['Store State'].dropna().unique()
     selected_state = st.selectbox("Select State", state_options)
 
-    spSuspension options = df[(df['State Region'] == selected_region) & (df['Store State'] == selected_state)]['Spoc Name'].dropna().unique()
+    spoc_options = df[(df['State Region'] == selected_region) & (df['Store State'] == selected_state)]['Spoc Name'].dropna().unique()
     selected_spoc = st.selectbox("Select SPOC", spoc_options)
 
     spoc_filtered_df = df[(df['State Region'] == selected_region) &
@@ -180,13 +180,13 @@ if 'data' in st.session_state:
 
         st.plotly_chart(fig)
 
-    st.subheader("(5) Year and Month Wise Growth")
+    st.subheader("(4) Year and Month Wise Growth")
     year_month_growth = filtered_df.groupby(['Year', 'Month', 'State Region']).size().reset_index(name='Trade-In Count')
     year_month_growth['Year-Month'] = year_month_growth['Year'].astype(str) + " " + year_month_growth['Month']
     fig_growth = px.bar(year_month_growth, x='Year-Month', y='Trade-In Count', color='State Region', title="Year and Month Wise Growth")
     st.plotly_chart(fig_growth)
 
-    st.subheader("(6) Downloadable Report - Top & Bottom 10 Stores")
+    st.subheader("(5) Downloadable Report - Top & Bottom 10 Stores")
     top_10 = filtered_df.groupby(['Store State', 'Store Name', 'Spoc Name']).size().reset_index(name='Trade-In Count').nlargest(10, 'Trade-In Count')
     bottom_10 = filtered_df.groupby(['Store State', 'Store Name', 'Spoc Name']).size().reset_index(name='Trade-In Count').nsmallest(10, 'Trade-In Count')
 
