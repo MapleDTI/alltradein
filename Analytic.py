@@ -421,23 +421,5 @@ else:
         else:
             st.write("No working day losses to display.")
 
-        # 7. Price Sensitivity Analysis
-        st.header("7. Price Sensitivity Analysis")
-        merged_df = pd.merge(
-            maple_filtered[['Spoc Name', 'Store Name', 'Maple Bid', 'Old IMEI No']],
-            cashify_filtered[['Spoc Name', 'Store Name', 'Initial Device Amount', 'Old Device IMEI']],
-            on=['Spoc Name', 'Store Name', 'Old Device IMEI'],
-            how='inner'
-        )
-        merged_df['Price Difference'] = merged_df['Maple Bid'] - merged_df['Initial Device Amount']
-        high_price_losses = merged_df[merged_df['Price Difference'] > 0]
-        
-        if not high_price_losses.empty:
-            st.write(f"Devices Lost Despite Higher Maple Bid: {len(high_price_losses)}")
-            fig = px.histogram(high_price_losses, x='Price Difference', title="Price Difference Distribution (Maple > Cashify)")
-            st.plotly_chart(fig)
-        else:
-            st.write("No instances where Maple offered higher prices but lost devices.")
-
     else:
         st.warning("Please upload both Maple and Cashify Excel files to proceed.")
