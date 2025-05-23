@@ -32,12 +32,12 @@ spoc_targets = {
     "Senthil Athiban": 28, "Motilal": 30, "R Rahul": 28, "V Dinesh": 27, "Rahul Raju": 28,
     "Mahesh Kumar": 30, "Nandish": 28, "Vishnu": 25, "Issac": 30, "Mudasir": 25,
     "Selva kumar": 28, "Muthukumar": 27, "V.RAGHUL": 27, "Mohd Riyas": 28, "Gopi J": 34,
-    "Anbhu S": 28, "Philip Raj": 28, "Bala Murugan": 29, "Vacant": 27, "Manikandan": 31,
-    "Tamil Selvan": 28, "Alir Khan": 37, "Resigned(Vacant)": 30, "Suntareshwar": 30,
-    "Aravind G": 37, "Sudarsan S": 33, "Sachin Rathor": 34, "MOHAMMED FAZIL": 34,
+    "Anbhu S": 28, "Philip Raj": 28, "Bala Murugan": 29, "Manikandan": 31,
+    "Tamil Selvan": 28, "Alir Khan": 37, "Resigned(Vacant)": 30,  # Updated from "Vacant"
+    "Suntareshwar": 30, "Aravind G": 37, "Sudarsan S": 33, "Sachin Rathor": 34, "MOHAMMED FAZIL": 34,
     "Prakadeeswaran": 37, "Abhijit B": 33, "Krishnabharathi": 43, "Sanni Vishwakarma": 40,
     "Sirajudeen A": 41, "Karuppusami": 42, "Bharat KP": 43, "Mohd Waseem": 44,
-    "Murali R": 45, "Prashanth E": 54, "Bharath S": 63, "Abhishek B S": 68,
+    "Murali R": 45, "Prashanth E": 54, "Bharath": 63, "Abhishek B S": 68,
     "Farhaan Khan": 73, "Badhrudheen": 76, "Eshwar": 87, "Chandra Mouleeswaran": 80,
     "Sundaramoorthy": 73, "Sai Kumar": 108, "Manjunath": 101, "Javed Shaikh": 160,
     "Amit Desai": 110, "Rohidas": 160, "Praful": 175, "Uttam Singh": 125,
@@ -52,14 +52,14 @@ weekoff_days = {
     "Nandish": "Tuesday", "Vishnu": "Tuesday", "Issac": "Tuesday", "Mudasir": "Tuesday",
     "Selva kumar": "Monday", "Muthukumar": "Wednesday", "V.RAGHUL": "Thursday",
     "Mohd Riyas": "Monday", "Gopi J": "Monday", "Anbhu S": "Thursday",
-    "Philip Raj": "Thursday", "Bala Murugan": "Wednesday", "Vacant": "Vacant",
+    "Philip Raj": "Thursday", "Bala Murugan": "Wednesday",
     "Manikandan": "Monday", "Tamil Selvan": "Monday", "Alir Khan": "Wednesday",
     "Resigned(Vacant)": "Vacant", "Suntareshwar": "Vacant", "Aravind G": "Tuesday",
     "Sudarsan S": "Monday", "Sachin Rathor": "Wednesday", "MOHAMMED FAZIL": "Thursday",
     "Prakadeeswaran": "Thursday", "Abhijit B": "Wednesday", "Krishnabharathi": "Wednesday",
     "Sanni Vishwakarma": "Wednesday", "Sirajudeen A": "Monday", "Karuppusami": "Thursday",
     "Bharat KP": "Monday", "Mohd Waseem": "Tuesday", "Murali R": "Wednesday",
-    "Prashanth E": "Thursday", "Bharath S": "Thursday", "Abhishek B S": "Tuesday",
+    "Prashanth E": "Thursday", "Bharath": "Thursday", "Abhishek B S": "Tuesday",
     "Farhaan Khan": "Wednesday", "Badhrudheen": "Tuesday", "Eshwar": "Wednesday",
     "Chandra Mouleeswaran": "Monday", "Sundaramoorthy": "Tuesday", "Sai Kumar": "Tuesday",
     "Manjunath": "Wednesday"
@@ -77,7 +77,7 @@ spoc_weekoffs = {spoc: may_2025_weekoffs.get(day, []) for spoc, day in weekoff_d
 
 # Required columns for validation
 MAPLE_REQUIRED_COLUMNS = ['Created Date', 'Month', 'Year', 'Store Name', 'Spoc Name', 'State Region', 'Store State', 'Maple Bid', 'Old IMEI No']
-CASHIFY_REQUIRED_COLUMNS = ['Order Date', 'Month', 'Year', 'Store Name', 'Spoc Name', 'Store State', 'Initial Device Amount', 'Old Device IMEI']
+CASHIFY_REQUIRED_COLUMNS = ['Order Date', 'Month', 'Year', 'Store Name', 'Spoc Name', 'State Region', 'Store State', 'Initial Device Amount', 'Old Device IMEI']
 
 # Function to validate DataFrame columns
 def validate_columns(df, required_columns, df_name):
@@ -122,6 +122,18 @@ def filter_by_date(df, year, month, day=None, is_maple=True):
         st.error(f"Column '{date_column}' not found in {'Maple' if is_maple else 'Cashify'} data.")
         return pd.DataFrame()
     try:
+        # Ensure all required columns are present before filtering
+        required_cols = ['Year', 'Month', date_column]
+        if is_maple:
+            required_cols.extend(['State Region', 'Store Name', 'Spoc Name', 'Maple Bid', 'Old IMEI No', 'Store State'])
+        else:
+            required_cols.extend(['State Region', 'Store Name', 'Spoc Name', 'Initial Device Amount', 'Old Device IMEI', 'Store State'])
+        
+        missing_cols = [col for col in required_cols if col not in df.columns]
+        if missing_cols:
+            st.error(f"Missing required columns in {'Maple' if is_maple else 'Cashify'} data after filtering: {', '.join(missing_cols)}")
+            return pd.DataFrame()
+        
         df[date_column] = pd.to_datetime(df[date_column], errors='coerce', dayfirst=True)
         df = df[df['Year'] == year]
         if month and month != "All":
@@ -134,9 +146,13 @@ def filter_by_date(df, year, month, day=None, is_maple=True):
         return pd.DataFrame()
 
 # Function to calculate market share
-def calculate_market_share(maple_count, cashify_count):
-    total = maple_count + cashify_count
-    return (maple_count / total * 100) if total > 0 else 0
+def calculate_market_share(spoc_achievement, devices_lost_to_cashify):
+    total = spoc_achievement + devices_lost_to_cashify
+    return (spoc_achievement / total * 100) if total > 0 else 0
+
+# Function to calculate target achievement percentage
+def calculate_target_achievement(spoc_achievement, target):
+    return (spoc_achievement / target * 100) if target > 0 else 0
 
 # Login function
 def login():
@@ -243,6 +259,18 @@ else:
             df['Store Name'] = df['Store Name'].str.strip().str.title()
             df['Spoc Name'] = df['Spoc Name'].str.strip().str.title()
 
+        # Debug: Check columns after filtering
+        st.write("Debug: Maple Filtered Columns:", list(maple_filtered.columns))
+        st.write("Debug: Cashify Filtered Columns:", list(cashify_filtered.columns))
+
+        # Validate that 'State Region' exists in both DataFrames
+        if 'State Region' not in maple_filtered.columns:
+            st.error("Error: 'State Region' column missing in Maple filtered data. Please check your data and filters.")
+            st.stop()
+        if 'State Region' not in cashify_filtered.columns:
+            st.error("Error: 'State Region' column missing in Cashify filtered data. Please check your data and filters.")
+            st.stop()
+
         # 1. Daily, Weekly, Monthly Average Devices Acquired
         st.header("1. Average Devices Acquired")
         col1, col2 = st.columns(2)
@@ -284,37 +312,92 @@ else:
         store_name = st.selectbox("Select Store Name", store_names)
         spocs = sorted(set(maple_filtered[maple_filtered['Store Name'] == store_name]['Spoc Name'].dropna()))
         if not spocs:
-            st.warning("No SPOCs available for the selected store.")
-            st.stop()
-        spoc = st.selectbox("Select SPOC", spocs)
+            st.warning("No SPOCs available for the selected store in Maple data.")
+            spoc = "No Spoc"
+        else:
+            spoc = st.selectbox("Select SPOC", spocs)
 
-        maple_spoc_count = len(maple_filtered[(maple_filtered['Store Name'] == store_name) & (maple_filtered['Spoc Name'] == spoc)])
-        cashify_spoc_count = len(cashify_filtered[(cashify_filtered['Store Name'] == store_name) & (cashify_filtered['Spoc Name'] == spoc)])
-        market_share = calculate_market_share(maple_spoc_count, cashify_spoc_count)
-        
-        target = spoc_targets.get(spoc, 0)
-        achievement = maple_spoc_count
-        shortfall = target - achievement
-        devices_lost = cashify_spoc_count
-        maple_avg_bid = maple_filtered[(maple_filtered['Store Name'] == store_name) & (maple_filtered['Spoc Name'] == spoc)]['Maple Bid'].mean()
-        cashify_avg_bid = cashify_filtered[(cashify_filtered['Store Name'] == store_name) & (cashify_filtered['Spoc Name'] == spoc)]['Initial Device Amount'].mean()
+        # Calculate counts for the selected SPOC and store
+        if spoc == "No Spoc":
+            spoc_achievement = 0  # No trade-ins in Maple if no SPOC
+            # Count Cashify trade-ins for the store, regardless of SPOC
+            devices_lost_to_cashify = len(cashify_filtered[cashify_filtered['Store Name'] == store_name])
+        else:
+            spoc_achievement = len(maple_filtered[(maple_filtered['Store Name'] == store_name) & (maple_filtered['Spoc Name'] == spoc)])
+            devices_lost_to_cashify = len(cashify_filtered[(cashify_filtered['Store Name'] == store_name) & (cashify_filtered['Spoc Name'] == spoc)])
+
+        market_share = calculate_market_share(spoc_achievement, devices_lost_to_cashify)
+        target = spoc_targets.get(spoc, 0) if spoc != "No Spoc" else 0
+        target_achievement_percent = calculate_target_achievement(spoc_achievement, target)
+        shortfall = target - spoc_achievement
+        maple_avg_bid = maple_filtered[(maple_filtered['Store Name'] == store_name) & (maple_filtered['Spoc Name'] == spoc)]['Maple Bid'].mean() if spoc != "No Spoc" else 0
+        cashify_avg_bid = cashify_filtered[(cashify_filtered['Store Name'] == store_name) & (cashify_filtered['Spoc Name'] == spoc)]['Initial Device Amount'].mean() if spoc != "No Spoc" else cashify_filtered[cashify_filtered['Store Name'] == store_name]['Initial Device Amount'].mean()
         price_diff = maple_avg_bid - cashify_avg_bid if pd.notna(maple_avg_bid) and pd.notna(cashify_avg_bid) else 0
         
         st.write(f"Market Share: {market_share:.2f}%")
         st.write(f"SPOC Target: {target}")
-        st.write(f"SPOC Achievement: {achievement}")
+        st.write(f"SPOC Achievement: {spoc_achievement}")
+        st.write(f"Target Achieved MTD: {target_achievement_percent:.2f}%")
         st.write(f"SPOC Shortfall: {shortfall}")
-        st.write(f"Devices Lost to Cashify: {devices_lost}")
+        st.write(f"Total Devices Lost to Cashify Against {spoc}: {devices_lost_to_cashify}")
         st.write(f"Average Price Difference (Maple - Cashify): {price_diff:.2f}")
-        if price_diff > 0:
+        if price_diff > 0 and spoc != "No Spoc":
             st.warning("Maple offered higher prices but still lost devices.")
 
-        # 2.1 Stores with Market Share Below 50% in the Selected State
-        st.subheader("Stores with Market Share Below 50% in Selected State")
-        stores_in_state = maple_filtered[maple_filtered['Store State'] == store_state]['Store Name'].unique()
+        # 2.1 Overall Market Share of South Region in a Table
+        st.subheader("Overall Market Share of South Region")
+        south_market_share_data = []
+        south_region = "South"  # Define the South region
+        if south_region in set(maple_filtered['State Region'].dropna()):
+            south_stores = maple_filtered[maple_filtered['State Region'] == south_region]['Store Name'].unique()
+            for store in south_stores:
+                store_spocs = maple_filtered[maple_filtered['Store Name'] == store]['Spoc Name'].unique()
+                store_state = maple_filtered[maple_filtered['Store Name'] == store]['Store State'].iloc[0] if not maple_filtered[maple_filtered['Store Name'] == store].empty else "Unknown"
+                for store_spoc in store_spocs:
+                    maple_count = len(maple_filtered[(maple_filtered['Store Name'] == store) & (maple_filtered['Spoc Name'] == store_spoc)])
+                    cashify_count = len(cashify_filtered[(cashify_filtered['Store Name'] == store) & (cashify_filtered['Spoc Name'] == store_spoc)])
+                    ms = calculate_market_share(maple_count, cashify_count)
+                    south_market_share_data.append({
+                        'Region': south_region,
+                        'Store State': store_state,
+                        'Store Name': store,
+                        'Spoc Name': store_spoc,
+                        'Market Share (%)': round(ms, 2)
+                    })
+        
+        if south_market_share_data:
+            south_ms_df = pd.DataFrame(south_market_share_data)
+            st.write("**Market Share Breakdown for South Region:**")
+            st.dataframe(south_ms_df)
+        else:
+            st.write("No data available for the South region.")
+
+        # 2.2 Region-wise Market Share
+        st.subheader("Region-wise Market Share")
+        region_market_share_data = []
+        all_regions = sorted(set(maple_filtered['State Region'].dropna()))
+        for reg in all_regions:
+            region_maple = len(maple_filtered[maple_filtered['State Region'] == reg])
+            region_cashify = len(cashify_filtered[cashify_filtered['State Region'] == reg])
+            region_ms = calculate_market_share(region_maple, region_cashify)
+            region_market_share_data.append({
+                'Region': reg,
+                'Market Share (%)': round(region_ms, 2)
+            })
+        
+        if region_market_share_data:
+            region_ms_df = pd.DataFrame(region_market_share_data)
+            st.write("**Market Share by Region:**")
+            st.dataframe(region_ms_df)
+        else:
+            st.write("No region-wise market share data available.")
+
+        # 2.3 Stores with Market Share Below 50% in Selected Region
+        st.subheader("Stores with Market Share Below 50% in Selected Region")
+        stores_in_region = maple_filtered[maple_filtered['State Region'] == region]['Store Name'].unique()
         low_market_share_data = []
         
-        for store in stores_in_state:
+        for store in stores_in_region:
             store_spocs = maple_filtered[maple_filtered['Store Name'] == store]['Spoc Name'].unique()
             for store_spoc in store_spocs:
                 maple_count = len(maple_filtered[(maple_filtered['Store Name'] == store) & (maple_filtered['Spoc Name'] == store_spoc)])
@@ -340,7 +423,7 @@ else:
                 y='Store Name',
                 color='Spoc Name',
                 text='Maple Devices',
-                title=f"Stores in {store_state} with Market Share Below 50%",
+                title=f"Stores in {region} with Market Share Below 50%",
                 orientation='h'
             )
             fig.update_traces(textposition='inside')
@@ -357,12 +440,12 @@ else:
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
         else:
-            st.write(f"No stores in {store_state} have a market share below 50%.")
+            st.write(f"No stores in {region} have a market share below 50%.")
 
         # 3. SPOC Performance for Selected Month
         st.header("3. SPOC Performance in Selected Month")
         if selected_month != "All":
-            spoc_devices = len(maple_filtered[maple_filtered['Spoc Name'] == spoc])
+            spoc_devices = len(maple_filtered[maple_filtered['Spoc Name'] == spoc]) if spoc != "No Spoc" else 0
             st.write(f"**{spoc}'s Performance in {selected_month} {selected_year}**")
             st.write(f"Devices Acquired: {spoc_devices}")
         else:
@@ -370,56 +453,72 @@ else:
 
         # 4. Category-wise Contribution
         st.header("4. Category-wise Contribution")
-        maple_cat = maple_filtered[maple_filtered['Spoc Name'] == spoc].groupby('Product Category').size()
-        cashify_cat = cashify_filtered[cashify_filtered['Spoc Name'] == spoc].groupby('Product Category').size()
-        total = maple_cat.sum() + cashify_cat.sum()
-        if total > 0:
-            maple_cat = (maple_cat / total * 100).reset_index(name='Maple %')
-            cashify_cat = (cashify_cat / total * 100).reset_index(name='Cashify %')
-            cat_df = pd.merge(maple_cat, cashify_cat, on='Product Category', how='outer').fillna(0)
-            fig = go.Figure(data=[
-                go.Bar(name='Maple', x=cat_df['Product Category'], y=cat_df['Maple %']),
-                go.Bar(name='Cashify', x=cat_df['Product Category'], y=cat_df['Cashify %'])
-            ])
-            fig.update_layout(barmode='group', title="Category-wise Contribution")
-            st.plotly_chart(fig)
+        if spoc != "No Spoc":
+            maple_cat = maple_filtered[maple_filtered['Spoc Name'] == spoc].groupby('Product Category').size()
+            cashify_cat = cashify_filtered[cashify_filtered['Spoc Name'] == spoc].groupby('Product Category').size()
+            total = maple_cat.sum() + cashify_cat.sum()
+            if total > 0:
+                maple_cat = (maple_cat / total * 100).reset_index(name='Maple %')
+                cashify_cat = (cashify_cat / total * 100).reset_index(name='Cashify %')
+                cat_df = pd.merge(maple_cat, cashify_cat, on='Product Category', how='outer').fillna(0)
+                fig = go.Figure(data=[
+                    go.Bar(name='Maple', x=cat_df['Product Category'], y=cat_df['Maple %']),
+                    go.Bar(name='Cashify', x=cat_df['Product Category'], y=cat_df['Cashify %'])
+                ])
+                fig.update_layout(barmode='group', title="Category-wise Contribution")
+                st.plotly_chart(fig)
+            else:
+                st.write("No category data available for this SPOC.")
         else:
-            st.write("No category data available for this SPOC.")
+            st.write("No SPOC selected, cannot display category-wise contribution.")
 
         # 5. Devices Lost on SPOC Weekoff Days at the SPOC's Store
         st.header("5. Devices Lost on SPOC Weekoff Days at Their Store")
-        weekoff_dates = spoc_weekoffs.get(spoc, [])
-        # Get the store(s) where the SPOC works
-        spoc_stores = maple_filtered[maple_filtered['Spoc Name'] == spoc]['Store Name'].unique()
-        if len(spoc_stores) == 0:
-            st.write(f"No stores found for {spoc} in the filtered data.")
+        if spoc != "No Spoc":
+            weekoff_dates = spoc_weekoffs.get(spoc, [])
+            # Get the store(s) where the SPOC works
+            spoc_stores = maple_filtered[maple_filtered['Spoc Name'] == spoc]['Store Name'].unique()
+            if len(spoc_stores) == 0:
+                st.write(f"No stores found for {spoc} in the filtered data.")
+            else:
+                store = spoc_stores[0]  # Assuming SPOC is tied to one store in the filtered data
+                weekoff_losses = cashify_filtered[
+                    (cashify_filtered['Store Name'] == store) &
+                    (cashify_filtered['Order Date'].dt.date.isin(weekoff_dates))
+                ]
+                weekoff_count = len(weekoff_losses)
+                st.write(f"Devices Traded in Cashify at {store} on {spoc}'s Weekoff Days: {weekoff_count}")
+                if weekoff_count > 0:
+                    weekoff_by_cat = weekoff_losses.groupby('Product Category').size().reset_index(name='Count')
+                    fig = px.pie(weekoff_by_cat, names='Product Category', values='Count', title="Weekoff Day Losses by Category")
+                    st.plotly_chart(fig)
         else:
-            store = spoc_stores[0]  # Assuming SPOC is tied to one store in the filtered data
-            weekoff_losses = cashify_filtered[
-                (cashify_filtered['Store Name'] == store) &
-                (cashify_filtered['Order Date'].dt.date.isin(weekoff_dates))
-            ]
-            weekoff_count = len(weekoff_losses)
-            st.write(f"Devices Traded in Cashify at {store} on {spoc}'s Weekoff Days: {weekoff_count}")
-            if weekoff_count > 0:
-                weekoff_by_cat = weekoff_losses.groupby('Product Category').size().reset_index(name='Count')
-                fig = px.pie(weekoff_by_cat, names='Product Category', values='Count', title="Weekoff Day Losses by Category")
-                st.plotly_chart(fig)
+            st.write("No SPOC selected, cannot display weekoff day losses.")
 
         # 6. Working Day Losses
         st.header("6. Working Day Losses")
-        working_losses = cashify_filtered[(cashify_filtered['Spoc Name'] == spoc) & 
-                                         (~cashify_filtered['Order Date'].dt.date.isin(weekoff_dates))]
-        total_working = len(maple_filtered[maple_filtered['Spoc Name'] == spoc]) + len(working_losses)
-        loss_percent = (len(working_losses) / total_working * 100) if total_working > 0 else 0
-        st.write(f"Total Devices Lost: {len(working_losses)} ({loss_percent:.2f}%)")
-        
-        loss_by_state = working_losses.groupby('Store State').size().reset_index(name='Count')
-        if not loss_by_state.empty:
-            fig = px.bar(loss_by_state, x='Store State', y='Count', title="Working Day Losses by State")
-            st.plotly_chart(fig)
+        if spoc != "No Spoc":
+            weekoff_dates = spoc_weekoffs.get(spoc, [])
+            # Count devices lost to Cashify on SPOC's working days (non-weekoff days)
+            working_day_losses = cashify_filtered[(cashify_filtered['Spoc Name'] == spoc) & 
+                                                 (~cashify_filtered['Order Date'].dt.date.isin(weekoff_dates))]
+            working_day_loss_count = len(working_day_losses)
+            
+            # Calculate total trade-ins (Maple + Cashify) for percentage context
+            total_trade_ins = len(maple_filtered[maple_filtered['Spoc Name'] == spoc]) + len(cashify_filtered[cashify_filtered['Spoc Name'] == spoc])
+            loss_percent = (working_day_loss_count / total_trade_ins * 100) if total_trade_ins > 0 else 0
+            
+            st.write(f"Working Day Losses Against {spoc}: {working_day_loss_count} ({loss_percent:.2f}% of total trade-ins)")
+            
+            # Bar chart of losses by state
+            loss_by_state = working_day_losses.groupby('Store State').size().reset_index(name='Count')
+            if not loss_by_state.empty:
+                fig = px.bar(loss_by_state, x='Store State', y='Count', title="Working Day Losses by State")
+                st.plotly_chart(fig)
+            else:
+                st.write("No working day losses to display.")
         else:
-            st.write("No working day losses to display.")
+            st.write("No SPOC selected, cannot display working day losses.")
 
     else:
         st.warning("Please upload both Maple and Cashify Excel files to proceed.")
