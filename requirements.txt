@@ -40,3 +40,6 @@ typing_extensions==4.13.2
 tzdata==2025.2
 urllib3==2.4.0
 XlsxWriter==3.2.3
+streamlit
+gspread
+oauth2client
